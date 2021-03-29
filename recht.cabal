@@ -14,6 +14,8 @@ executable recht
     , async
     , blessings
     , data-default
+    , directory
+    , filepath
     , optparse-generic
     , pandoc
     , random
