@@ -20,7 +20,7 @@ import System.Environment (lookupEnv)
 import System.FilePath
 import System.Random
 import Text.HTML.Scalpel
-import Text.Pandoc (WrapOption (WrapNone), readHtml, writePlain, writerWrapText)
+import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerWrapText)
 import Text.Pandoc.Class (runPure)
 import Text.Read
 import Text.Regex.TDFA
@@ -31,7 +31,7 @@ data RechtOptions = Get Text (Maybe Text) | List (Maybe Text) | Random (Maybe Te
 instance ParseRecord RechtOptions
 
 htmlToPlain :: Text.Text -> Text.Text
-htmlToPlain string = fromRight "" $ runPure $ writePlain def {writerWrapText = WrapNone} =<< readHtml def string
+htmlToPlain string = fromRight "" $ runPure $ writeMarkdown def {writerWrapText = WrapNone} =<< readHtml def string
 
 data LawEntry = LawEntry
   { lawEntryAbbreviation :: Text.Text,
@@ -89,7 +89,7 @@ prettyLaw :: Law -> Text.Text
 prettyLaw Law {..} =
   Text.unlines $
     mapMaybe stringToMaybe $
-      [ lawTitle <> maybe "" (\x -> " (" <> x <> ")") (stringToMaybe lawAbbreviation),
+      [ "# " <> lawTitle <> maybe "" (\x -> " (" <> x <> ")") (stringToMaybe lawAbbreviation),
         lawDate,
         " "
       ]
@@ -97,7 +97,7 @@ prettyLaw Law {..} =
 
 prettyNorm :: Norm -> Text.Text
 prettyNorm Norm {..} =
-  Text.unlines [normNumber <> maybe "" (" – " <>) (stringToMaybe normTitle), "", normText]
+  Text.unlines ["## " <> normNumber <> maybe "" (" – " <>) (stringToMaybe normTitle), "", normText]
 
 choose :: [a] -> IO (Maybe a)
 choose list = (list `atMay`) <$> randomRIO (0, length list - 1)
@@ -168,8 +168,7 @@ runRecht laws options =
       maybeRandomNorm <- choose (lawNorms foundLaw)
       case maybeRandomNorm of
         Just randomNorm -> do
-          Text.putStrLn $ lawAbbreviation foundLaw
-          Text.putStrLn $ lawTitle foundLaw
+          Text.putStrLn $ "# " <> lawAbbreviation foundLaw <> " – " <> lawTitle foundLaw
           Text.putStr $ prettyNorm randomNorm
         Nothing -> runRecht laws options
     List Nothing -> forM_ laws $ \LawEntry {..} -> Text.putStrLn $ "[" <> lawEntryAbbreviation <> "] " <> lawEntryTitle
