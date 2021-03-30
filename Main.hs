@@ -16,11 +16,12 @@ import qualified Data.Text.IO as Text
 import Options.Generic
 import Safe (atMay)
 import System.Directory
+import System.Environment (lookupEnv)
 import System.FilePath
 import System.Random
 import Text.HTML.Scalpel
-import Text.Pandoc
-import Text.Pandoc.Class
+import Text.Pandoc (WrapOption (WrapNone), readHtml, writePlain, writerWrapText)
+import Text.Pandoc.Class (runPure)
 import Text.Read
 import Text.Regex.TDFA
 
@@ -58,8 +59,9 @@ data Norm = Norm
 
 cached :: (Read a, Show a) => FilePath -> IO a -> IO a
 cached cacheName action = do
-  cacheDirectoryExists <- doesDirectoryExist directory
-  unless cacheDirectoryExists $ createDirectory directory
+  cacheDirectoryPath <- getCacheDirectoryPath
+  createDirectoryIfMissing True cacheDirectoryPath
+  let cacheFile = cacheDirectoryPath </> map escape cacheName
   cachedFileExists <- doesFileExist cacheFile
   if cachedFileExists
     then do
@@ -69,8 +71,11 @@ cached cacheName action = do
         Nothing -> runAndCache cacheFile
     else runAndCache cacheFile
   where
-    directory = ".cache"
-    cacheFile = directory </> map escape cacheName
+    getCacheDirectoryPath = do
+      xdgCacheHome <- lookupEnv "XDG_CACHE_HOME"
+      case xdgCacheHome of
+        Just path@(_ : _) -> pure $ path </> "recht"
+        _ -> maybe ".recht" (\home -> home </> ".cache" </> "recht") <$> lookupEnv "HOME"
     escape '/' = '_'
     escape x = x
     runAndCache file = do
