@@ -13,6 +13,8 @@ executable recht
       base
     , async
     , blessings
+    , binary
+    , bytestring
     , data-default
     , directory
     , filepath

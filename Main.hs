@@ -7,23 +7,50 @@
 
 import Control.Concurrent.Async
 import Control.Monad
+import Data.Binary
+import Data.Binary.Get
+import Data.Binary.Put
+import qualified Data.ByteString as B (hGet, length)
+import Data.ByteString.Lazy (ByteString)
+import qualified Data.ByteString.Lazy as ByteString
+import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Internal as L (defaultChunkSize)
 import Data.Default
 import Data.Either (fromRight)
 import Data.List (dropWhileEnd, find, stripPrefix)
 import Data.Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import GHC.Generics (Generic)
 import Options.Generic
 import Safe (atMay)
 import System.Directory
 import System.Environment (lookupEnv)
 import System.FilePath
+import System.IO
 import System.Random
 import Text.HTML.Scalpel
 import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerWrapText)
 import Text.Pandoc.Class (runPure)
-import Text.Read
 import Text.Regex.TDFA
+
+blockSize :: Int
+blockSize = 8 * 1024 ^ 2
+
+-- Taken from https://hackage.haskell.org/package/binary-0.8.8.0/docs/src/Data.Binary.html#decodeFileOrFail
+-- to adjust chunk size to 8M instead of 32K (the Haskell default).
+decodeFileOrFail' :: Binary a => FilePath -> IO (Either (ByteOffset, String) a)
+decodeFileOrFail' f =
+  withBinaryFile f ReadMode $ \h -> do
+    feed (runGetIncremental get) h
+  where
+    feed (Done _ _ x) _ = return (Right x)
+    feed (Fail _ pos str) _ = return (Left (pos, str))
+    feed (Partial k) h = do
+      chunk <- B.hGet h blockSize
+      case B.length chunk of
+        0 -> feed (k Nothing) h
+        _ -> feed (k (Just chunk)) h
 
 data RechtOptions = Get Text (Maybe Text) | List (Maybe Text) | Random (Maybe Text)
   deriving (Generic, Show)
@@ -38,7 +65,7 @@ data LawEntry = LawEntry
     lawEntryTitle :: Text.Text,
     lawEntryUrl :: URL
   }
-  deriving (Show, Read)
+  deriving (Show, Generic)
 
 data Law = Law
   { lawTitle :: Text.Text,
@@ -47,7 +74,7 @@ data Law = Law
     lawId :: Text.Text,
     lawNorms :: [Norm]
   }
-  deriving (Show, Read)
+  deriving (Show, Generic)
 
 data Norm = Norm
   { normTitle :: Text.Text,
@@ -55,9 +82,15 @@ data Norm = Norm
     normId :: Text.Text,
     normText :: Text.Text
   }
-  deriving (Show, Read)
+  deriving (Show, Generic)
 
-cached :: (Read a, Show a) => FilePath -> IO a -> IO a
+instance Binary Norm
+
+instance Binary Law
+
+instance Binary LawEntry
+
+cached :: (Binary a) => FilePath -> IO a -> IO a
 cached cacheName action = do
   cacheDirectoryPath <- getCacheDirectoryPath
   createDirectoryIfMissing True cacheDirectoryPath
@@ -65,10 +98,10 @@ cached cacheName action = do
   cachedFileExists <- doesFileExist cacheFile
   if cachedFileExists
     then do
-      cachedFileContents <- readMaybe <$> readFile cacheFile
+      cachedFileContents <- decodeFileOrFail' cacheFile
       case cachedFileContents of
-        Just value -> pure value
-        Nothing -> runAndCache cacheFile
+        Right value -> pure value
+        _ -> runAndCache cacheFile
     else runAndCache cacheFile
   where
     getCacheDirectoryPath = do
@@ -80,7 +113,7 @@ cached cacheName action = do
     escape x = x
     runAndCache file = do
       result <- action
-      result <$ writeFile file (show result)
+      result <$ ByteString.writeFile file (encode result)
 
 stringToMaybe :: Text.Text -> Maybe Text.Text
 stringToMaybe string = if Text.null string then Nothing else Just string
@@ -192,4 +225,6 @@ runRecht laws options =
         Nothing -> fail $ "'" <> Text.unpack string <> "' ist nicht auffindbar"
 
 main :: IO ()
-main = join $ runRecht <$> lawEntries <*> getRecord "Gesetzbrowser CLI"
+main = do
+  hSetBuffering stdout (BlockBuffering (Just blockSize))
+  join $ runRecht <$> lawEntries <*> getRecord "Gesetzbrowser CLI"
