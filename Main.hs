@@ -9,12 +9,7 @@ import Control.Concurrent.Async
 import Control.Monad
 import Data.Binary
 import Data.Binary.Get
-import Data.Binary.Put
 import qualified Data.ByteString as B (hGet, length)
-import Data.ByteString.Lazy (ByteString)
-import qualified Data.ByteString.Lazy as ByteString
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Internal as L (defaultChunkSize)
 import Data.Default
 import Data.Either (fromRight)
 import Data.List (dropWhileEnd, find, stripPrefix)
@@ -33,7 +28,6 @@ import Text.HTML.Scalpel
 import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerExtensions, writerWrapText)
 import Text.Pandoc.Class (runPure)
 import Text.Pandoc.Extensions
-import Text.Regex.TDFA
 
 newtype RechtOptions = RechtOptions {rechtAction :: RechtAction}
 
@@ -57,7 +51,7 @@ getRechtOptions :: IO RechtOptions
 getRechtOptions = execParser $ info (helper <*> rechtArguments) $ fullDesc <> header "The recht Gesetz-Browser"
 
 blockSize :: Int
-blockSize = 8 * 1024 ^ 2
+blockSize = 8 * 1024 ^ (2 :: Int)
 
 -- Taken from https://hackage.haskell.org/package/binary-0.8.8.0/docs/src/Data.Binary.html#decodeFileOrFail
 -- to adjust chunk size to 8M instead of 32K (the Haskell default).
@@ -67,7 +61,7 @@ decodeFileOrFail' f =
     feed (runGetIncremental get) h
   where
     feed (Done _ _ x) _ = return (Right x)
-    feed (Fail _ pos str) _ = return (Left (pos, str))
+    feed (Fail _ pos string) _ = return (Left (pos, string))
     feed (Partial k) h = do
       chunk <- B.hGet h blockSize
       case B.length chunk of
@@ -108,7 +102,7 @@ instance Binary Law
 instance Binary LawEntry
 
 cached :: (Binary a) => FilePath -> IO a -> IO a
-cached cacheName action = do
+cached cacheName ioAction = do
   cacheDirectoryPath <- getCacheDirectoryPath
   createDirectoryIfMissing True cacheDirectoryPath
   let cacheFile = cacheDirectoryPath </> map escape cacheName
@@ -117,7 +111,7 @@ cached cacheName action = do
     then do
       cachedFileContents <- decodeFileOrFail' cacheFile
       case cachedFileContents of
-        Right value -> pure value
+        Right decoded -> pure decoded
         _ -> runAndCache cacheFile
     else runAndCache cacheFile
   where
@@ -129,8 +123,8 @@ cached cacheName action = do
     escape '/' = '_'
     escape x = x
     runAndCache file = do
-      result <- action
-      result <$ ByteString.writeFile file (encode result)
+      result <- ioAction
+      result <$ encodeFile file result
 
 stringToMaybe :: Text.Text -> Maybe Text.Text
 stringToMaybe string = if Text.null string then Nothing else Just string
@@ -228,7 +222,6 @@ runRecht options = do
       forM_ (lawNorms foundLaw) $ \Norm {..} ->
         Text.putStrLn $ normNumber <> maybe "" (" – " <>) (stringToMaybe normTitle)
     Get buch paragraph -> do
-      laws <- lawEntries
       foundLaw <- findLaw buch laws
       case paragraph of
         Just number ->
@@ -237,8 +230,8 @@ runRecht options = do
             Nothing -> Text.putStrLn $ "'" <> buch <> "', " <> number <> " ist nicht auffindbar"
         Nothing -> Text.putStr $ prettyLaw foundLaw
   where
-    findLaw string lawEntries =
-      case find (\LawEntry {..} -> Text.toLower string == Text.toLower lawEntryAbbreviation) lawEntries of
+    findLaw string entries =
+      case find (\LawEntry {..} -> Text.toLower string == Text.toLower lawEntryAbbreviation) entries of
         Just lawEntry -> lawFromEntry lawEntry
         Nothing -> fail $ "'" <> Text.unpack string <> "' ist nicht auffindbar"
 

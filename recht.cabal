@@ -8,7 +8,7 @@ executable recht
   main-is: Main.hs
   other-modules:
       Paths_recht
-  ghc-options: -threaded
+  ghc-options: -threaded -Wall
   build-depends:
       base
     , async
@@ -21,7 +21,6 @@ executable recht
     , optparse-applicative
     , pandoc
     , random
-    , regex-tdfa
     , safe
     , scalpel
     , text
