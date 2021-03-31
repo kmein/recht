@@ -22,7 +22,7 @@ import Data.Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
 import GHC.Generics (Generic)
-import Options.Generic
+import Options.Applicative
 import Safe (atMay)
 import System.Directory
 import System.Environment (lookupEnv)
@@ -30,9 +30,31 @@ import System.FilePath
 import System.IO
 import System.Random
 import Text.HTML.Scalpel
-import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerWrapText)
+import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerExtensions, writerWrapText)
 import Text.Pandoc.Class (runPure)
+import Text.Pandoc.Extensions
 import Text.Regex.TDFA
+
+newtype RechtOptions = RechtOptions {rechtAction :: RechtAction}
+
+data RechtAction = Get Text.Text (Maybe Text.Text) | List (Maybe Text.Text) | Random (Maybe Text.Text)
+
+rechtArguments :: Parser RechtOptions
+rechtArguments =
+  RechtOptions
+    <$> subparser
+      ( mconcat
+          [ command "get" $ info ((Get <$> buch <*> optional search) <**> helper) $ progDesc "Gesetze oder Einzelnormen anzeigen",
+            command "list" $ info ((List <$> optional buch) <**> helper) $ progDesc "Alle Gesetze bzw. Einzelnormen eines Gesetzes auflisten.",
+            command "random" $ info ((Random <$> optional buch) <**> helper) $ progDesc "Eine zufällige Einzelnorm (optional aus einem spezifierten Gesetzbuch) ausgeben."
+          ]
+      )
+  where
+    buch = strArgument $ metavar "BUCH" <> help "Abkürzung eines Gesetzbuches"
+    search = strArgument $ metavar "ZAHL|TITEL" <> help "Suchbegriff für den Titel der Einzelnorm"
+
+getRechtOptions :: IO RechtOptions
+getRechtOptions = execParser $ info (helper <*> rechtArguments) $ fullDesc <> header "The recht Gesetz-Browser"
 
 blockSize :: Int
 blockSize = 8 * 1024 ^ 2
@@ -52,13 +74,8 @@ decodeFileOrFail' f =
         0 -> feed (k Nothing) h
         _ -> feed (k (Just chunk)) h
 
-data RechtOptions = Get Text (Maybe Text) | List (Maybe Text) | Random (Maybe Text)
-  deriving (Generic, Show)
-
-instance ParseRecord RechtOptions
-
 htmlToPlain :: Text.Text -> Text.Text
-htmlToPlain string = fromRight "" $ runPure $ writeMarkdown def {writerWrapText = WrapNone} =<< readHtml def string
+htmlToPlain string = fromRight "" $ runPure $ writeMarkdown def {writerWrapText = WrapNone, writerExtensions = enableExtension Ext_simple_tables (writerExtensions def)} =<< readHtml def string
 
 data LawEntry = LawEntry
   { lawEntryAbbreviation :: Text.Text,
@@ -191,9 +208,10 @@ getLaw url =
       normText <- htmlToPlain <$> innerHTML ("div" @: [hasClass "jnhtml"])
       return Norm {..}
 
-runRecht :: [LawEntry] -> RechtOptions -> IO ()
-runRecht laws options =
-  case options of
+runRecht :: RechtOptions -> IO ()
+runRecht options = do
+  laws <- lawEntries
+  case rechtAction options of
     Random maybeBuch -> do
       foundLaw <- case maybeBuch of
         Nothing -> lawFromEntry . fromJust =<< choose laws
@@ -203,7 +221,7 @@ runRecht laws options =
         Just randomNorm -> do
           Text.putStrLn $ "# " <> lawAbbreviation foundLaw <> " – " <> lawTitle foundLaw
           Text.putStr $ prettyNorm randomNorm
-        Nothing -> runRecht laws options
+        Nothing -> runRecht options
     List Nothing -> forM_ laws $ \LawEntry {..} -> Text.putStrLn $ "[" <> lawEntryAbbreviation <> "] " <> lawEntryTitle
     List (Just buch) -> do
       foundLaw <- findLaw buch laws
@@ -227,4 +245,4 @@ runRecht laws options =
 main :: IO ()
 main = do
   hSetBuffering stdout (BlockBuffering (Just blockSize))
-  join $ runRecht <$> lawEntries <*> getRecord "Gesetzbrowser CLI"
+  getRechtOptions >>= runRecht
