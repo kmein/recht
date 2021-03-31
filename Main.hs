@@ -16,11 +16,11 @@ import Data.List (dropWhileEnd, find, stripPrefix)
 import Data.Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import Data.Time
 import GHC.Generics (Generic)
 import Options.Applicative
 import Safe (atMay)
 import System.Directory
-import System.Environment (lookupEnv)
 import System.FilePath
 import System.IO
 import System.Random
@@ -103,23 +103,27 @@ instance Binary LawEntry
 
 cached :: (Binary a) => FilePath -> IO a -> IO a
 cached cacheName ioAction = do
-  cacheDirectoryPath <- getCacheDirectoryPath
+  cacheDirectoryPath <- getXdgDirectory XdgCache "recht"
   createDirectoryIfMissing True cacheDirectoryPath
   let cacheFile = cacheDirectoryPath </> map escape cacheName
   cachedFileExists <- doesFileExist cacheFile
   if cachedFileExists
     then do
-      cachedFileContents <- decodeFileOrFail' cacheFile
-      case cachedFileContents of
-        Right decoded -> pure decoded
-        _ -> runAndCache cacheFile
+      cacheTooOld <- isCacheInvalidated cacheFile
+      if cacheTooOld
+        then runAndCache cacheFile
+        else do
+          cachedFileContents <- decodeFileOrFail' cacheFile
+          case cachedFileContents of
+            Right decoded -> pure decoded
+            _ -> runAndCache cacheFile
     else runAndCache cacheFile
   where
-    getCacheDirectoryPath = do
-      xdgCacheHome <- lookupEnv "XDG_CACHE_HOME"
-      case xdgCacheHome of
-        Just path@(_ : _) -> pure $ path </> "recht"
-        _ -> maybe ".recht" (\home -> home </> ".cache" </> "recht") <$> lookupEnv "HOME"
+    isCacheInvalidated file = do
+      modificationTime <- getModificationTime file
+      now <- getCurrentTime
+      let cacheAge = diffUTCTime now modificationTime
+      return $ cacheAge >= nominalDay
     escape '/' = '_'
     escape x = x
     runAndCache file = do

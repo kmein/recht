@@ -24,4 +24,5 @@ executable recht
     , safe
     , scalpel
     , text
+    , time
   default-language: Haskell2010
