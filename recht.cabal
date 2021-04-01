@@ -1,7 +1,7 @@
 cabal-version: >=1.12
 
 name: recht
-version: 0.1.0
+version: 0.2.0
 build-type: Simple
 license: MIT
 author: Kierán Meinhardt <kmein@posteo.de>
