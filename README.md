@@ -1,4 +1,4 @@
-# Recht CLI
+# Der `recht` [ʀɛçt] Gesetzbrowser
 [Gesetze](https://www.gesetze-im-internet.de/) finden und lesen auf der Kommandozeile.
 
 ## Bedienung
@@ -71,3 +71,12 @@ Die Schranken dieses einen Gesetzes hinter sich lassend, können auch zufällige
     § 1 – Beitragssätze in der Rentenversicherung
 
     Der Beitragssatz für das Jahr 2000 beträgt in der Rentenversicherung der Arbeiter und der Angestellten 19,3 vom Hundert und in der knappschaftlichen Rentenversicherung 25,6 vom Hundert.
+
+## Cache
+
+Die Daten von gesetze-im-internet.de werden nach dem Herunterladen für einen Tag im Cache bereitgehalten, sodass folgende Aufrufe von `recht` sowohl schneller sind als auch keinen Internetzugang benötigen.
+
+## Entwicklung
+- Kompilation: `nix-build`
+- GHCI Demon: `nix-shell --attr env default.nix --run ghcid`
+- REPL: `nix-shell --attr env default.nix --run 'cabal repl'`
