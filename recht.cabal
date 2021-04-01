@@ -1,14 +1,16 @@
-cabal-version: 1.12
+cabal-version: >=1.12
 
-name:           recht
-version:        0.1.0
-build-type:     Simple
+name: recht
+version: 0.1.0
+build-type: Simple
+license: MIT
+author: Kierán Meinhardt <kmein@posteo.de>
 
 executable recht
+  hs-source-dirs: src
   main-is: Main.hs
-  other-modules:
-      Paths_recht
-  ghc-options: -threaded -Wall
+  other-modules: Recht.Cache, Recht.Types, Recht.Options, Recht.Util, Recht.Scraper, Recht.Render
+  ghc-options: -O2 -threaded -Wall
   build-depends:
       base
     , async
