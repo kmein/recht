@@ -24,6 +24,12 @@ decodeFileOrFail' f =
         0 -> feed (k Nothing) h
         _ -> feed (k (Just chunk)) h
 
+isCacheInvalidated :: FilePath -> IO Bool
+isCacheInvalidated file = do
+  let maxAge = nominalDay
+  cacheAge <- diffUTCTime <$> getCurrentTime <*> getModificationTime file
+  return $ cacheAge >= maxAge
+
 cached :: (Binary a) => FilePath -> IO a -> IO a
 cached cacheName ioAction = do
   cacheDirectoryPath <- getXdgDirectory XdgCache "recht"
@@ -42,11 +48,6 @@ cached cacheName ioAction = do
             _ -> runAndCache cacheFile
     else runAndCache cacheFile
   where
-    isCacheInvalidated file = do
-      modificationTime <- getModificationTime file
-      now <- getCurrentTime
-      let cacheAge = diffUTCTime now modificationTime
-      return $ cacheAge >= nominalDay
     escape '/' = '_'
     escape x = x
     runAndCache file = do

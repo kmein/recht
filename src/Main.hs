@@ -1,7 +1,7 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Strict #-}
 
 module Main (main) where
@@ -27,7 +27,7 @@ runRecht options = do
         Just buch -> findLaw buch laws
       choose (lawNorms foundLaw) >>= \case
         Just randomNorm -> do
-          Text.putStrLn $ "# " <> prettyLawTitle foundLaw
+          Text.putStrLn $ prettyLawTitle foundLaw
           Text.putStr $ prettyNorm randomNorm
         Nothing -> runRecht options
     List Nothing -> mapM_ (Text.putStrLn . prettyLawEntry) laws
