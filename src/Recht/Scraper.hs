@@ -3,6 +3,7 @@
 
 module Recht.Scraper (lawEntries, lawFromEntry) where
 
+import Control.Applicative
 import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad (guard)
 import Data.List (dropWhileEnd, stripPrefix)
@@ -66,6 +67,6 @@ getLaw url =
     norm = do
       normId <- attr "id" anySelector
       normTitle <- Text.strip <$> text ("span" @: [hasClass "jnentitel"])
-      normNumber <- Text.strip <$> text ("span" @: [hasClass "jnenbez"])
+      normNumber <- optional $ Text.strip <$> text ("span" @: [hasClass "jnenbez"])
       normText <- htmlToPlain <$> innerHTML ("div" @: [hasClass "jnhtml"])
       return Norm {..}

@@ -26,14 +26,20 @@ data Law = Law
 
 data Norm = Norm
   { normTitle :: Text,
-    normNumber :: Text,
+    normNumber :: Maybe Text,
     normId :: Text,
     normText :: Text
   }
   deriving (Show, Generic)
 
 normMatches :: Text -> Norm -> Bool
-normMatches search Norm {..} = search `isInfixOf` normNumber || toLower search `isInfixOf` toLower normTitle
+normMatches search Norm {..} =
+  ( case normNumber of
+      Just number -> search `isInfixOf` number
+      Nothing -> False
+  )
+    || toLower search
+    `isInfixOf` toLower normTitle
 
 lawEntryMatches :: Text -> LawEntry -> Bool
 lawEntryMatches string LawEntry {..} = toLower string == toLower lawEntryAbbreviation
