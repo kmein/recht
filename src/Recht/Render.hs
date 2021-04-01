@@ -9,15 +9,14 @@ import Data.Maybe (mapMaybe)
 import Data.Text (Text, null, pack, unlines)
 import Recht.Types
 import System.Console.ANSI
-import Text.Pandoc (WrapOption (WrapNone), readHtml, writePlain, writerExtensions, writerWrapText)
+import Text.Pandoc (WrapOption (WrapNone), readHtml, writeOrg, writerWrapText)
 import Text.Pandoc.Class (runPure)
-import Text.Pandoc.Extensions
 
 withSGR :: [SGR] -> Text -> Text
 withSGR codes string = pack (setSGRCode codes) <> string <> pack (setSGRCode [Reset])
 
 htmlToPlain :: Text -> Text
-htmlToPlain string = fromRight "" $ runPure $ writePlain def {writerWrapText = WrapNone, writerExtensions = enableExtension Ext_simple_tables (writerExtensions def)} =<< readHtml def string
+htmlToPlain string = fromRight "" $ runPure $ writeOrg def {writerWrapText = WrapNone} =<< readHtml def string
 
 stringToMaybe :: Text -> Maybe Text
 stringToMaybe string = if Data.Text.null string then Nothing else Just string
