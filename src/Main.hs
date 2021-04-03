@@ -28,17 +28,17 @@ runRecht options = do
       choose (lawNorms foundLaw) >>= \case
         Just randomNorm -> do
           Text.putStrLn $ prettyLawTitle foundLaw
-          Text.putStr $ prettyNorm randomNorm
+          Text.putStr $ prettyNorm Nothing randomNorm
         Nothing -> runRecht options
     List Nothing -> mapM_ (Text.putStrLn . prettyLawEntry) laws
     List (Just buch) -> mapM_ (Text.putStrLn . prettyNormTitle) . lawNorms =<< findLaw buch laws
-    Get buch maybeSearch -> do
+    Get buch maybeFocus -> do
       foundLaw <- findLaw buch laws
-      case maybeSearch of
-        Just search ->
-          case find (normMatches search) $ lawNorms foundLaw of
-            Just foundNorm -> Text.putStr $ prettyNorm foundNorm
-            Nothing -> Text.putStrLn $ "Keine Einzelnorm mit '" <> search <> "' in '" <> lawTitle foundLaw <> " ' gefunden."
+      case maybeFocus of
+        Just focus ->
+          case find (normMatches focus) $ lawNorms foundLaw of
+            Just foundNorm -> Text.putStr $ prettyNorm (Just focus) foundNorm
+            Nothing -> Text.putStrLn $ "Keine Einzelnorm mit '" <> Text.pack (show focus) <> "' in '" <> lawTitle foundLaw <> " ' gefunden."
         Nothing -> Text.putStr $ prettyLaw foundLaw
   where
     findLaw string entries =

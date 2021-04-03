@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Recht.Render (htmlToPlain, prettyNorm, prettyLaw, prettyNormTitle, prettyLawEntry, prettyLawTitle) where
+module Recht.Render (prettyNorm, prettyLaw, prettyNormTitle, prettyLawEntry, prettyLawTitle) where
 
 import Data.Default (Default (def))
 import Data.Either (fromRight)
-import Data.Maybe (mapMaybe)
-import Data.Text (Text, null, pack, unlines)
+import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Text (Text, isInfixOf, null, pack, unlines)
 import Recht.Types
 import System.Console.ANSI
 import Text.Pandoc (WrapOption (WrapNone), readHtml, writeOrg, writerWrapText)
@@ -40,14 +40,17 @@ prettyLaw law@Law {..} =
         lawDate,
         " "
       ]
-        ++ map prettyNorm lawNorms
+        ++ map (prettyNorm Nothing) lawNorms
 
 prettyNormTitle :: Norm -> Text
 prettyNormTitle Norm {..} = concatWith " - " (withSGR [SetConsoleIntensity BoldIntensity] <$> normNumber) (withSGR [SetColor Foreground Dull Cyan] <$> stringToMaybe normTitle)
 
-prettyNorm :: Norm -> Text
-prettyNorm norm@Norm {..} =
-  Data.Text.unlines [prettyNormTitle norm, "", normText]
+prettyNorm :: Maybe Focus -> Norm -> Text
+prettyNorm focus norm@Norm {..} =
+  Data.Text.unlines $ [prettyNormTitle norm, ""] <> map (maybeHighlight . htmlToPlain) normParagraphs
+  where
+    highlight = withSGR [SetColor Foreground Dull Yellow]
+    maybeHighlight text = if any (\p -> ("(" <> p <> ")") `isInfixOf` text) (fromMaybe [] $ focusParagraph =<< focus) then highlight text else text
 
 prettyLawEntry :: LawEntry -> Text
 prettyLawEntry LawEntry {..} = "[" <> withSGR [SetColor Foreground Dull Red] lawEntryAbbreviation <> "] " <> lawEntryTitle

@@ -10,7 +10,6 @@ import Data.List (dropWhileEnd, stripPrefix)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as Text
 import Recht.Cache
-import Recht.Render (htmlToPlain)
 import Recht.Types
 import System.FilePath ((<.>))
 import Text.HTML.Scalpel
@@ -68,5 +67,5 @@ getLaw url =
       normId <- attr "id" anySelector
       normTitle <- Text.strip <$> text ("span" @: [hasClass "jnentitel"])
       normNumber <- optional $ Text.strip <$> text ("span" @: [hasClass "jnenbez"])
-      normText <- htmlToPlain <$> innerHTML ("div" @: [hasClass "jnhtml"])
+      normParagraphs <- innerHTMLs ("div" @: [hasClass "jurAbsatz"])
       return Norm {..}
