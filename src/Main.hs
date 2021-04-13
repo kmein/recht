@@ -6,6 +6,7 @@
 
 module Main (main) where
 
+import Blessings
 import Data.List (find)
 import Data.Maybe
 import qualified Data.Text as Text
@@ -27,17 +28,17 @@ runRecht options = do
         Just buch -> findLaw buch laws
       choose (lawNorms foundLaw) >>= \case
         Just randomNorm -> do
-          Text.putStrLn $ prettyLawTitle foundLaw
-          Text.putStr $ prettyNorm Nothing randomNorm
+          Text.putStrLn $ pp $ prettyLawTitle foundLaw
+          Text.putStr $ pp $ prettyNorm Nothing randomNorm
         Nothing -> runRecht options
-    List Nothing -> mapM_ (Text.putStrLn . prettyLawEntry) laws
-    List (Just buch) -> mapM_ (Text.putStrLn . prettyNormTitle) . lawNorms =<< findLaw buch laws
+    List Nothing -> mapM_ (Text.putStrLn . pp . prettyLawEntry) laws
+    List (Just buch) -> mapM_ (Text.putStrLn . pp . prettyNormTitle) . lawNorms =<< findLaw buch laws
     Get buch maybeFocus -> do
       foundLaw <- findLaw buch laws
       case maybeFocus of
         Just focus ->
           case find (normMatches focus) $ lawNorms foundLaw of
-            Just foundNorm -> Text.putStr $ prettyNorm (Just focus) foundNorm
+            Just foundNorm -> Text.putStr $ pp $ prettyNorm (Just focus) foundNorm
             Nothing -> Text.putStrLn $ "Keine Einzelnorm mit '" <> Text.pack (show focus) <> "' in '" <> lawTitle foundLaw <> " ' gefunden."
         Nothing -> Text.putStr $ prettyLaw foundLaw
   where

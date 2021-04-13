@@ -13,7 +13,7 @@ executable recht
   ghc-options: -O2 -threaded -Wall
   build-depends:
       base
-    , ansi-terminal
+    , blessings
     , async
     , binary
     , bytestring
