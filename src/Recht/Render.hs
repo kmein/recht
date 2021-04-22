@@ -36,7 +36,7 @@ prettyLawTitle Law {..} = maybe "" (\x -> "[" <> SGR [2, 31] (Plain x) <> "] ") 
 
 prettyLaw :: Law -> Text
 prettyLaw law@Law {..} =
-  Text.unlines $
+  Text.intercalate "\n\n" $
     mapMaybe stringToMaybe $
       [ pp $ prettyLawTitle law,
         lawDate,
