@@ -34,15 +34,15 @@ htmlToPlain string = fromRight "" $ runPure $ writeOrg def {writerWrapText = Wra
 prettyLawTitle :: Law -> Blessings Text
 prettyLawTitle Law {..} = maybe "" (\x -> "[" <> SGR [2, 31] (Plain x) <> "] ") (stringToMaybe lawAbbreviation) <> Plain lawTitle
 
-prettyLaw :: Law -> Text
+prettyLaw :: Law -> Blessings Text
 prettyLaw law@Law {..} =
-  Text.intercalate "\n\n" $
+  mconcat . intersperse "\n\n" $
     mapMaybe stringToMaybe $
-      [ pp $ prettyLawTitle law,
-        lawDate,
+      [ prettyLawTitle law,
+        Plain lawDate,
         " "
       ]
-        ++ map (pp . prettyNorm Nothing) lawNorms
+        ++ map (prettyNorm Nothing) lawNorms
 
 prettyNormTitle :: Norm -> Blessings Text
 prettyNormTitle Norm {..} = concatWith " - " (SGR [1] . Plain <$> normNumber) (SGR [2, 36] . Plain <$> stringToMaybe normTitle)

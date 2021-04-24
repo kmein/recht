@@ -11,11 +11,14 @@ import Data.List (find)
 import Data.Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
+import System.Directory (createDirectoryIfMissing)
 import Recht.Options
 import Recht.Render
+import Control.Monad (void, forM_)
+import System.FilePath
 import Recht.Scraper
 import Recht.Types
-import Recht.Util (blockSize, choose)
+import Recht.Util (blockSize, choose, retry)
 import System.IO
 
 runRecht :: RechtOptions -> IO ()
@@ -31,6 +34,14 @@ runRecht options = do
           Text.putStrLn $ pp $ prettyLawTitle foundLaw
           Text.putStr $ pp $ prettyNorm Nothing randomNorm
         Nothing -> runRecht options
+    Dump dumpDirectory -> do
+      hSetBuffering stdout LineBuffering
+      createDirectoryIfMissing True dumpDirectory
+      forM_ laws $ \lawEntry -> retry $ do
+        let dumpFileName = makeValid $ Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry) <.> "txt"
+        law <- lawFromEntry lawEntry
+        void $ Text.writeFile (dumpDirectory </> dumpFileName) $ pp $ stripSGR $ prettyLaw law
+        Text.putStrLn $ Text.unwords ["-", "[" <> lawEntryAbbreviation lawEntry <> "](" <> Text.pack (dumpDirectory </> dumpFileName) <> ")", lawEntryTitle lawEntry]
     List Nothing -> mapM_ (Text.putStrLn . pp . prettyLawEntry) laws
     List (Just buch) -> mapM_ (Text.putStrLn . pp . prettyNormTitle) . lawNorms =<< findLaw buch laws
     Get buch maybeFocus -> do
@@ -40,7 +51,7 @@ runRecht options = do
           case find (normMatches focus) $ lawNorms foundLaw of
             Just foundNorm -> Text.putStr $ pp $ prettyNorm (Just focus) foundNorm
             Nothing -> Text.putStrLn $ "Keine Einzelnorm mit '" <> Text.pack (show focus) <> "' in '" <> lawTitle foundLaw <> " ' gefunden."
-        Nothing -> Text.putStr $ prettyLaw foundLaw
+        Nothing -> Text.putStr $ pp $ prettyLaw foundLaw
   where
     findLaw string entries =
       case find (lawEntryMatches string) entries of
