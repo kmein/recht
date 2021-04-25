@@ -1,20 +1,19 @@
 module Recht.Options (RechtAction (..), RechtOptions (..), getRechtOptions) where
 
-import Control.Monad (join)
 import Data.Text (Text, unwords)
-import Options.Applicative
-import Recht.Types (Focus, parseFocus)
+import Options.Applicative hiding (ParseError)
+import Recht.Types (ParseError, Focus, parseFocus)
 
 newtype RechtOptions = RechtOptions {rechtAction :: RechtAction}
 
-data RechtAction = Get Text (Maybe Focus) | List (Maybe Text) | Random (Maybe Text) | Dump FilePath
+data RechtAction = Get Text (Maybe (Either ParseError Focus)) | List (Maybe Text) | Random (Maybe Text) | Dump FilePath
 
 rechtArguments :: Parser RechtOptions
 rechtArguments =
   RechtOptions
     <$> subparser
       ( mconcat
-          [ command "get" $ info ((Get <$> buch <*> fmap join (optional search)) <**> helper) $ progDesc "Gesetze oder Einzelnormen anzeigen",
+          [ command "get" $ info ((Get <$> buch <*> optional search) <**> helper) $ progDesc "Gesetze oder Einzelnormen anzeigen",
             command "list" $ info ((List <$> optional buch) <**> helper) $ progDesc "Alle Gesetze bzw. Einzelnormen eines Gesetzes auflisten.",
             command "random" $ info ((Random <$> optional buch) <**> helper) $ progDesc "Eine zufällige Einzelnorm (optional aus einem spezifierten Gesetzbuch) ausgeben.",
             command "dump" $ info ((Dump <$> dumpDirectory) <**> helper) $ progDesc "Alle Gesetze in einen Ordner herunterladen."
