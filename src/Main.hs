@@ -38,7 +38,7 @@ runRecht options = do
       hSetBuffering stdout LineBuffering
       createDirectoryIfMissing True dumpDirectory
       forM_ laws $ \lawEntry -> retry $ do
-        let dumpFileName = makeValid $ Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry) <.> "txt"
+        let dumpFileName = makeValid $ Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry) <.> "md"
         law <- lawFromEntry lawEntry
         void $ Text.writeFile (dumpDirectory </> dumpFileName) $ pp $ stripSGR $ prettyLaw law
         Text.putStrLn $ Text.unwords ["-", "[" <> lawEntryAbbreviation lawEntry <> "](" <> Text.pack (dumpDirectory </> dumpFileName) <> ")", lawEntryTitle lawEntry]

@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeApplications #-}
-module Recht.Util (blockSize, choose, split, retry) where
+{-# LANGUAGE LambdaCase #-}
+module Recht.Util (blockSize, choose, split, retry, unicodeSuperscript) where
 
 import qualified Data.Text as Text
 import Safe (atMay)
@@ -15,6 +16,20 @@ choose list = (list `atMay`) <$> randomRIO (0, length list - 1)
 
 retry :: IO a -> IO a
 retry f = catch @SomeException f (const $ threadDelay 1000000 >> f)
+
+unicodeSuperscript :: Char -> Char
+unicodeSuperscript = \case
+  '0' -> '⁰'
+  '1' -> '¹'
+  '2' -> '²'
+  '3' -> '³'
+  '4' -> '⁴'
+  '5' -> '⁵'
+  '6' -> '⁶'
+  '7' -> '⁷'
+  '8' -> '⁸'
+  '9' -> '⁹'
+  c -> c
 
 -- split a string by a delimiter, keeping the delimiter in front:
 -- split isDigit "hello1world2foo354bar" == ["hello", "1world", "2foo", "354bar"]

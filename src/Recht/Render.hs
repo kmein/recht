@@ -1,4 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -13,8 +12,9 @@ import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
 import Recht.Types
-import Recht.Util (split)
-import Text.Pandoc (WrapOption (WrapNone), readHtml, writeOrg, writerWrapText)
+import Recht.Util (split, unicodeSuperscript)
+import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerWrapText, writerExtensions)
+import Text.Pandoc.Extensions (githubMarkdownExtensions)
 import Text.Pandoc.Class (runPure)
 
 concatWith :: Monoid m => m -> Maybe m -> Maybe m -> m
@@ -29,10 +29,19 @@ stringToMaybe :: (Eq m, Monoid m) => m -> Maybe m
 stringToMaybe string = if mempty == string then Nothing else Just string
 
 htmlToPlain :: Text -> Text
-htmlToPlain string = fromRight "" $ runPure $ writeOrg def {writerWrapText = WrapNone} =<< readHtml def string
+htmlToPlain string = replaceSuperscript $ simplifyMarkdown $ fromRight "" $ runPure $ writeMarkdown def { writerWrapText = WrapNone, writerExtensions = githubMarkdownExtensions } =<< readHtml def string
+  where
+    simplifyMarkdown = Text.replace "\\(" "(" . Text.replace "\\)" ")" . Text.replace "\\.  \n" ". " . Text.replace "\\)  \n" ") "
+    replaceSuperscript = Text.concat . map prettifySentenceMark . Text.splitOn supBegin
+      where
+        (supBegin, supEnd) = ("<sup>", "</sup>")
+        prettifySentenceMark sentence =
+          if Text.all isDigit mark then Text.map unicodeSuperscript mark <> Text.drop (Text.length supEnd) sentence' else sentence
+          where
+            (mark, sentence') = Text.breakOn supEnd sentence
 
 prettyLawTitle :: Law -> Blessings Text
-prettyLawTitle Law {..} = maybe "" (\x -> "[" <> SGR [2, 31] (Plain x) <> "] ") (stringToMaybe lawAbbreviation) <> Plain lawTitle
+prettyLawTitle Law {..} = SGR [34] "# " <> maybe "" (\x -> "[" <> SGR [2, 31] (Plain x) <> "] ") (stringToMaybe lawAbbreviation) <> Plain lawTitle
 
 prettyLaw :: Law -> Blessings Text
 prettyLaw law@Law {..} =
@@ -45,30 +54,12 @@ prettyLaw law@Law {..} =
         ++ map (prettyNorm Nothing) lawNorms
 
 prettyNormTitle :: Norm -> Blessings Text
-prettyNormTitle Norm {..} = concatWith " - " (SGR [1] . Plain <$> normNumber) (SGR [2, 36] . Plain <$> stringToMaybe normTitle)
+prettyNormTitle Norm {..} = SGR [34] "## " <> SGR [1] (concatWith " – " (Plain <$> normNumber) (Plain <$> stringToMaybe normTitle))
 
 prettyNorm :: Maybe Focus -> Norm -> Blessings Text
 prettyNorm focus norm@Norm {..} =
-  mconcat . intersperse "\n" $ [prettyNormTitle norm, ""] <> map (maybeHighlight . replaceSentenceMark . htmlToPlain) normParagraphs
+  mconcat . intersperse "\n" $ [prettyNormTitle norm, ""] <> map (maybeHighlight . htmlToPlain) normParagraphs
   where
-    unicodeSuperscript = \case
-      '0' -> '⁰'
-      '1' -> '¹'
-      '2' -> '²'
-      '3' -> '³'
-      '4' -> '⁴'
-      '5' -> '⁵'
-      '6' -> '⁶'
-      '7' -> '⁷'
-      '8' -> '⁸'
-      '9' -> '⁹'
-      c -> c
-    replaceSentenceMark = Text.concat . map prettifySentenceMark . Text.splitOn "^{"
-      where
-        prettifySentenceMark sentence =
-          if Text.all isDigit mark then Text.map unicodeSuperscript mark <> Text.drop 1 sentence' else sentence
-          where
-            (mark, sentence') = Text.breakOn "}" sentence
     maybeHighlight text =
       if any (\p -> ("(" <> p <> ")") `Text.isInfixOf` text) (fromMaybe [] $ focusParagraph =<< focus)
         then highlight . mconcat . map maybeHighlightSentence . splitSentences $ text

@@ -32,7 +32,7 @@ Das Inhaltsverzeichnis eines Gesetzes findet sich via:
 Um einen einzelnen Paragraphen zu lesen, lässt sich das Programm wie folgt aufrufen:
 
     $ recht get GG 1
-    Art 1
+    ## Art 1
 
     (1) Die Würde des Menschen ist unantastbar. Sie zu achten und zu schützen ist Verpflichtung aller staatlichen Gewalt.
 
@@ -43,22 +43,20 @@ Um einen einzelnen Paragraphen zu lesen, lässt sich das Programm wie folgt aufr
 Um ein Gesetz vollständig zu lesen, kann die Paragraphennummer weggelassen werden:
 
     $ recht get BlauzungenV
-    Verordnung zum Schutz gegen die Blauzungenkrankheit (BlauzungenV)
+    # Verordnung zum Schutz gegen die Blauzungenkrankheit (BlauzungenV)
     Ausfertigungsdatum: 22.03.2002
 
-    § 1 – Begriffsbestimmungen
+    ## § 1 – Begriffsbestimmungen
 
     (1) Im Sinne dieser Verordnung liegen vor:
 
-    1.
-    Blauzungenkrankheit ...
+    1. Blauzungenkrankheit ...
 
 Für einen zufälligen Paragraphen aus diesem faszinierenden Gesetz:
 
     $ recht random BlauzungenV
-    BlauzungenV
-    Verordnung zum Schutz gegen die Blauzungenkrankheit
-    § 6 – Vorschriften für Sperrgebiet und Beobachtungsgebiet
+    # [BlauzungenV] Verordnung zum Schutz gegen die Blauzungenkrankheit
+    ## § 6 – Vorschriften für Sperrgebiet und Beobachtungsgebiet
 
     Wer in einem Sperrgebiet oder einem Beobachtungsgebiet empfängliche Tiere hält, hat dies und den Standort der Tiere unverzüglich nach Bekanntgabe der Festsetzung nach § 5 Absatz 4 der zuständigen Behörde anzuzeigen.
 
@@ -66,9 +64,8 @@ Die Schranken dieses einen Gesetzes hinter sich lassend, können auch zufällige
 
 
     $ recht random
-    BSG 2000
-    Gesetz zur Bestimmung der Beitragssätze und zur Bestimmung der Umrechnungsfaktoren für den Versorgungsausgleich in der gesetzlichen Rentenversicherung für 2000  (Beitragssatzgesetz 2000 - BSG 2000)
-    § 1 – Beitragssätze in der Rentenversicherung
+    # [BSG 2000] Gesetz zur Bestimmung der Beitragssätze und zur Bestimmung der Umrechnungsfaktoren für den Versorgungsausgleich in der gesetzlichen Rentenversicherung für 2000  (Beitragssatzgesetz 2000 - BSG 2000)
+    ## § 1 – Beitragssätze in der Rentenversicherung
 
     Der Beitragssatz für das Jahr 2000 beträgt in der Rentenversicherung der Arbeiter und der Angestellten 19,3 vom Hundert und in der knappschaftlichen Rentenversicherung 25,6 vom Hundert.
 
