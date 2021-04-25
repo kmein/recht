@@ -13,9 +13,9 @@ import Data.Text (Text)
 import qualified Data.Text as Text
 import Recht.Types
 import Recht.Util (split, unicodeSuperscript)
-import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerWrapText, writerExtensions)
-import Text.Pandoc.Extensions (githubMarkdownExtensions)
+import Text.Pandoc (WrapOption (WrapNone), readHtml, writeMarkdown, writerExtensions, writerWrapText)
 import Text.Pandoc.Class (runPure)
+import Text.Pandoc.Extensions (githubMarkdownExtensions)
 
 concatWith :: Monoid m => m -> Maybe m -> Maybe m -> m
 concatWith middle left right =
@@ -29,7 +29,7 @@ stringToMaybe :: (Eq m, Monoid m) => m -> Maybe m
 stringToMaybe string = if mempty == string then Nothing else Just string
 
 htmlToPlain :: Text -> Text
-htmlToPlain string = replaceSuperscript $ simplifyMarkdown $ fromRight "" $ runPure $ writeMarkdown def { writerWrapText = WrapNone, writerExtensions = githubMarkdownExtensions } =<< readHtml def string
+htmlToPlain string = replaceSuperscript $ simplifyMarkdown $ fromRight "" $ runPure $ writeMarkdown def {writerWrapText = WrapNone, writerExtensions = githubMarkdownExtensions} =<< readHtml def string
   where
     simplifyMarkdown = Text.replace "\\(" "(" . Text.replace "\\)" ")" . Text.replace "\\.  \n" ". " . Text.replace "\\)  \n" ") "
     replaceSuperscript = Text.concat . map prettifySentenceMark . Text.splitOn supBegin

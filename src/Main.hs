@@ -7,20 +7,20 @@
 module Main (main) where
 
 import Blessings
+import Control.Monad (forM_, void, (<=<))
 import Data.List (find)
 import Data.Maybe
 import qualified Data.Text as Text
 import qualified Data.Text.IO as Text
-import System.Directory (createDirectoryIfMissing)
 import Recht.Options
 import Recht.Render
-import Control.Monad ((<=<), void, forM_)
-import System.FilePath
 import Recht.Scraper
-import Text.Megaparsec.Error (errorBundlePretty)
 import Recht.Types
-import Recht.Util (blockSize, choose, retry, ppToTTY)
+import Recht.Util (blockSize, choose, ppToTTY, retry)
+import System.Directory (createDirectoryIfMissing)
+import System.FilePath
 import System.IO
+import Text.Megaparsec.Error (errorBundlePretty)
 
 runRecht :: RechtOptions -> IO ()
 runRecht options = do

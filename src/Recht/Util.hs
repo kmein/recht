@@ -1,22 +1,24 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeApplications #-}
+
 module Recht.Util (blockSize, choose, split, retry, unicodeSuperscript, ppToTTY) where
 
+import Blessings (Blessable, Blessings, pp, stripSGR)
+import Control.Concurrent
+import Control.Exception
 import qualified Data.Text as Text
 import Safe (atMay)
-import Control.Exception
-import System.Random (randomRIO)
-import Control.Concurrent
 import System.IO (hIsTerminalDevice, stdout)
-import Blessings (Blessable, pp, stripSGR, Blessings)
+import System.Random (randomRIO)
 
 ppToTTY :: Blessable s => Blessings s -> IO s
 ppToTTY blessings = do
   isTTY <- hIsTerminalDevice stdout
-  return $ pp $
-    if isTTY
-       then blessings
-       else stripSGR blessings
+  return $
+    pp $
+      if isTTY
+        then blessings
+        else stripSGR blessings
 
 blockSize :: Int
 blockSize = 8 * 1024 ^ (2 :: Int)

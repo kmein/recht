@@ -2,7 +2,7 @@ module Recht.Options (RechtAction (..), RechtOptions (..), getRechtOptions) wher
 
 import Data.Text (Text, unwords)
 import Options.Applicative hiding (ParseError)
-import Recht.Types (ParseError, Focus, parseFocus)
+import Recht.Types (Focus, ParseError, parseFocus)
 
 newtype RechtOptions = RechtOptions {rechtAction :: RechtAction}
 
