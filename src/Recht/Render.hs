@@ -54,7 +54,7 @@ prettyLaw law@Law {..} =
         ++ map (prettyNorm Nothing) lawNorms
 
 prettyNormTitle :: Norm -> Blessings Text
-prettyNormTitle Norm {..} = SGR [34] "## " <> SGR [1] (concatWith " – " (Plain <$> normNumber) (Plain <$> stringToMaybe normTitle))
+prettyNormTitle Norm {..} = SGR [34] "# " <> SGR [1] (concatWith " – " (Plain <$> normNumber) (Plain <$> stringToMaybe normTitle))
 
 prettyNorm :: Maybe Focus -> Norm -> Blessings Text
 prettyNorm focus norm@Norm {..} =
