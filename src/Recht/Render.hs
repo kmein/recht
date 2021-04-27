@@ -41,14 +41,14 @@ htmlToPlain string = replaceSuperscript $ simplifyMarkdown $ fromRight "" $ runP
             (mark, sentence') = Text.breakOn supEnd sentence
 
 prettyLawTitle :: Law -> Blessings Text
-prettyLawTitle Law {..} = SGR [34] "# " <> maybe "" (\x -> "[" <> SGR [2, 31] (Plain x) <> "] ") (stringToMaybe lawAbbreviation) <> Plain lawTitle
+prettyLawTitle Law {..} = SGR [34] "% " <> SGR [1] (Plain lawTitle)
 
 prettyLaw :: Law -> Blessings Text
 prettyLaw law@Law {..} =
-  mconcat . intersperse "\n\n" $
+  mconcat . intersperse "\n" $
     mapMaybe stringToMaybe $
       [ prettyLawTitle law,
-        Plain lawDate,
+        "% " <> Plain lawDate,
         " "
       ]
         ++ map (prettyNorm Nothing) lawNorms
