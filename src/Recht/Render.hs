@@ -29,9 +29,10 @@ stringToMaybe :: (Eq m, Monoid m) => m -> Maybe m
 stringToMaybe string = if mempty == string then Nothing else Just string
 
 htmlToPlain :: Text -> Text
-htmlToPlain string = replaceSuperscript $ simplifyMarkdown $ fromRight "" $ runPure $ writeMarkdown def {writerWrapText = WrapNone, writerExtensions = githubMarkdownExtensions} =<< readHtml def string
+htmlToPlain string = replaceSuperscript $ fixImageLinks $ simplifyMarkdown $ fromRight "" $ runPure $ writeMarkdown def {writerWrapText = WrapNone, writerExtensions = githubMarkdownExtensions} =<< readHtml def string
   where
-    simplifyMarkdown = Text.replace "\\(" "(" . Text.replace "\\)" ")" . Text.replace "\\.  \n" ". " . Text.replace "\\)  \n" ") "
+    simplifyMarkdown = Text.replace "\\(" "(" . Text.replace "\\)" ")" . Text.replace ".  \n" ". " . Text.replace "\\.  \n" ". " . Text.replace "\\)  \n" ") "
+    fixImageLinks = Text.replace "(../" "(https://www.gesetze-im-internet.de/"
     replaceSuperscript = Text.concat . map prettifySentenceMark . Text.splitOn supBegin
       where
         (supBegin, supEnd) = ("<sup>", "</sup>")
