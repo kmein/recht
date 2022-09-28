@@ -1,14 +1,13 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
 
-module Recht.Util (blockSize, choose, split, retry, unicodeSuperscript, ppToTTY) where
+module Recht.Util (blockSize, choose, ignoreErrors, split, unicodeSuperscript, ppToTTY) where
 
 import Blessings (Blessable, Blessings, pp, stripSGR)
-import Control.Concurrent
 import Control.Exception
 import qualified Data.Text as Text
 import Safe (atMay)
-import System.IO (hIsTerminalDevice, stdout)
+import System.IO (hIsTerminalDevice, hPutStrLn, stdout, stderr)
 import System.Random (randomRIO)
 
 ppToTTY :: Blessable s => Blessings s -> IO s
@@ -26,8 +25,8 @@ blockSize = 8 * 1024 ^ (2 :: Int)
 choose :: [a] -> IO (Maybe a)
 choose list = (list `atMay`) <$> randomRIO (0, length list - 1)
 
-retry :: IO a -> IO a
-retry f = catch @SomeException f (const $ threadDelay 1000000 >> f)
+ignoreErrors :: IO () -> IO ()
+ignoreErrors f = f `catch` \e -> hPutStrLn stderr (show (e :: SomeException))
 
 unicodeSuperscript :: Char -> Char
 unicodeSuperscript = \case

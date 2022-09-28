@@ -16,7 +16,7 @@ import Recht.Options
 import Recht.Render
 import Recht.Scraper
 import Recht.Types
-import Recht.Util (blockSize, choose, ppToTTY, retry)
+import Recht.Util (blockSize, choose, ignoreErrors, ppToTTY)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath
 import System.IO
@@ -38,7 +38,7 @@ runRecht options = do
     Dump dumpDirectory -> do
       hSetBuffering stdout LineBuffering
       createDirectoryIfMissing True dumpDirectory
-      forM_ laws $ \lawEntry -> retry $ do
+      forM_ laws $ \lawEntry -> ignoreErrors $ do
         let dumpFileName = makeValid $ Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry) <.> "md"
         law <- lawFromEntry lawEntry
         void $ Text.writeFile (dumpDirectory </> dumpFileName) $ pp $ stripSGR $ prettyLaw law
