@@ -77,3 +77,6 @@ Die Daten von gesetze-im-internet.de werden nach dem Herunterladen für einen Ta
 - Kompilation: `nix-build`
 - GHCI Demon: `nix-shell --attr env default.nix --run ghcid`
 - REPL: `nix-shell --attr env default.nix --run 'cabal repl'`
+
+## Ähnliche Projekte
+- [Rechtsinfo API](https://api.rechtsinformationsportal.de/) (2020–)
