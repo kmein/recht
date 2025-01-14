@@ -4,7 +4,6 @@
 module Recht.Scraper (lawEntries, lawFromEntry) where
 
 import Control.Applicative
-import Control.Concurrent.Async (mapConcurrently)
 import Control.Monad (guard)
 import Data.List (dropWhileEnd, stripPrefix)
 import Data.Maybe (fromMaybe)
@@ -23,7 +22,7 @@ prefixRoot x = root <> "/" <> fromMaybe x (stripPrefix "./" x)
 lawEntries :: IO [LawEntry]
 lawEntries =
   cached "lawentries" $
-    concat <$> (mapConcurrently lawsOfIndex =<< indices)
+    concat <$> (traverse lawsOfIndex =<< indices)
   where
     indices :: IO [URL]
     indices = maybe [] (map prefixRoot) <$> scrapeURL (prefixRoot "aktuell.html") (attrs "href" ("a" @: [hasClass "alphabet"]))
