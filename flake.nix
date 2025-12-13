@@ -2,22 +2,37 @@
   description = "A very basic flake";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
-    flake-utils.url = "github:numtide/flake-utils";
     blessings.url = "git+https://cgit.krebsco.de/blessings";
     blessings.flake = false;
   };
 
-
-  outputs = inputs@{self, nixpkgs, flake-utils, blessings, ...}:
-  flake-utils.lib.eachDefaultSystem (system:
-  let
-    pkgs = import nixpkgs {
-      inherit system;
+  outputs =
+    {
+      self,
+      nixpkgs,
+      blessings,
+    }:
+    let
+      lib = nixpkgs.lib;
+      eachSupportedSystem = lib.genAttrs lib.systems.flakeExposed;
+      pkgsFor =
+        system:
+        import nixpkgs {
+          inherit system;
+        };
+    in
+    {
+      packages = eachSupportedSystem (
+        system:
+        let
+          pkgs = pkgsFor system;
+        in
+        {
+          recht = pkgs.haskellPackages.callCabal2nix "recht" self {
+            blessings = pkgs.haskellPackages.callCabal2nix "blessings" blessings.outPath { };
+          };
+        }
+      );
+      defaultPackage = eachSupportedSystem (system: self.packages.${system}.recht);
     };
-  in {
-    packages.recht = pkgs.haskellPackages.callCabal2nix "recht" self {
-      blessings = pkgs.haskellPackages.callCabal2nix "blessings" blessings.outPath {};
-    };
-    defaultPackage = self.packages.${system}.recht;
-  });
 }
