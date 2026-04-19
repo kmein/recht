@@ -2,6 +2,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Strict #-}
 
 module Main (main) where
@@ -17,7 +18,9 @@ import Recht.Render
 import Recht.Scraper
 import Recht.Types
 import Recht.Util (blockSize, choose, ignoreErrors, ppToTTY)
-import System.Directory (createDirectoryIfMissing)
+import Control.Exception (catch)
+import System.Directory (createDirectoryIfMissing, doesFileExist)
+import System.Posix.Files (createSymbolicLink)
 import System.FilePath
 import System.IO
 import Text.Regex.TDFA ((=~))
@@ -44,8 +47,16 @@ runRecht options = do
             Just regex -> filter (\l -> lawEntryAbbreviation l =~ Text.unpack regex) laws
       forM_ filteredLaws $ \lawEntry -> ignoreErrors $ do
         law <- lawFromEntry lawEntry
-        let dumpFileName = makeValid $ Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry) <> "-" <> Text.unpack (lawId law) <.> "md"
+        let baseName = Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry)
+            dumpFileName = makeValid $ baseName <> "-" <> Text.unpack (lawId law) <.> "md"
+            symlinkName = makeValid $ baseName <.> "md"
         void $ Text.writeFile (dumpDirectory </> dumpFileName) $ pp $ stripSGR $ prettyLaw law
+        -- Symlink simple name to unique name for backwards compatibility
+        let symlinkPath = dumpDirectory </> symlinkName
+        symlinkExists <- doesFileExist symlinkPath
+        if not symlinkExists
+          then createSymbolicLink dumpFileName symlinkPath `catch` (\(_ :: IOError) -> pure ())
+          else pure ()
         Text.putStrLn $ Text.unwords ["-", "[" <> lawEntryAbbreviation lawEntry <> "](" <> Text.pack (dumpDirectory </> dumpFileName) <> ")", lawEntryTitle lawEntry]
     List Nothing -> mapM_ (Text.putStrLn <=< ppToTTY . prettyLawEntry) laws
     List (Just buch) -> mapM_ (Text.putStrLn <=< ppToTTY . prettyNormTitle) . lawNorms =<< findLaw buch laws

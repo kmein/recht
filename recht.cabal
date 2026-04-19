@@ -1,7 +1,7 @@
 cabal-version: >=1.12
 
 name: recht
-version: 0.7.0
+version: 0.7.1
 build-type: Simple
 license: MIT
 author: Kierán Meinhardt <kmein@posteo.de>
@@ -27,6 +27,7 @@ executable recht
     , safe
     , scalpel
     , regex-tdfa
+    , unix
     , text
     , time
   default-language: Haskell2010
