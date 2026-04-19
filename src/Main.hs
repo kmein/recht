@@ -20,6 +20,7 @@ import Recht.Util (blockSize, choose, ignoreErrors, ppToTTY)
 import System.Directory (createDirectoryIfMissing)
 import System.FilePath
 import System.IO
+import Text.Regex.TDFA ((=~))
 import Text.Megaparsec.Error (errorBundlePretty)
 
 runRecht :: RechtOptions -> IO ()
@@ -35,12 +36,15 @@ runRecht options = do
           Text.putStrLn =<< ppToTTY (prettyLawTitle foundLaw)
           Text.putStr =<< ppToTTY (prettyNorm Nothing randomNorm)
         Nothing -> runRecht options
-    Dump dumpDirectory -> do
+    Dump dumpDirectory dumpRegex -> do
       hSetBuffering stdout LineBuffering
       createDirectoryIfMissing True dumpDirectory
-      forM_ laws $ \lawEntry -> ignoreErrors $ do
-        let dumpFileName = makeValid $ Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry) <.> "md"
+      let filteredLaws = case dumpRegex of
+            Nothing -> laws
+            Just regex -> filter (\l -> lawEntryAbbreviation l =~ Text.unpack regex) laws
+      forM_ filteredLaws $ \lawEntry -> ignoreErrors $ do
         law <- lawFromEntry lawEntry
+        let dumpFileName = makeValid $ Text.unpack (Text.replace " " "_" $ Text.replace "/" "_" $ lawEntryAbbreviation lawEntry) <> "-" <> Text.unpack (lawId law) <.> "md"
         void $ Text.writeFile (dumpDirectory </> dumpFileName) $ pp $ stripSGR $ prettyLaw law
         Text.putStrLn $ Text.unwords ["-", "[" <> lawEntryAbbreviation lawEntry <> "](" <> Text.pack (dumpDirectory </> dumpFileName) <> ")", lawEntryTitle lawEntry]
     List Nothing -> mapM_ (Text.putStrLn <=< ppToTTY . prettyLawEntry) laws
